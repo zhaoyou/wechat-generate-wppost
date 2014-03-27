@@ -5,6 +5,11 @@
 
 var express = require('express');
 var wechat = require('wechat');
+var nconf = require('nconf');
+//nconf
+nconf.argv().env().file({file: process.cwd() + '/config.json'});
+console.log(nconf.get('wp_url'), nconf.get('wp_user'), nconf.get('wp_password'));
+
 var routes = require('./routes');
 var user = require('./routes/user');
 var postToWordpress = require('./post_to_wordpress');
@@ -12,6 +17,10 @@ var http = require('http');
 var path = require('path');
 
 var app = express();
+
+//nconf
+//nconf.argv().env().file({file: process.cwd() + '/config.json'});
+//console.log(nconf.get('wp_url'), nconf.get('wp_user'), nconf.get('wp_password'));
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -43,17 +52,22 @@ app.use('/wechat', wechat('mytoken', wechat.text(function (info, req, res, next)
   }
 }).image(function(info, req, res, next) {
   req.wxsession.pics = req.wxsession.pics || [];
-  req.wxsession.pics.push(info.PicUrl);
+  req.wxsession.pics.push({
+    'url': info.PicUrl,
+    'name': info.FromUserName + info.CreateTime + '.jpg'
+  });
   if (req.wxsession.pics.length < 3) {
     res.reply('');
   } else {
-    var url = postToWordpress.save(req.wxsession.pics);
-    req.wxsession.pics = null;
-    res.reply('' +  url);
+    console.log(req.wxsession.pics);
+    postToWordpress.save(req.wxsession.pics, function(url) {
+      req.wxsession.pics = null;
+      res.reply(url);
+    });
   }
 })));
 
-postToWordpress.test();
+//postToWordpress.save();
 
 // development only
 if ('development' == app.get('env')) {

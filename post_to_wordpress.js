@@ -1,15 +1,18 @@
 
 var wp = require('wporg');
 var request = require('request');
+var async = require('async');
+var nconf = require('nconf');
+
 
 var client = wp.createClient({
-    username: "hadeser",
-    password: "zy",
-    url: "http://10.88.0.71/xmlrpc.php"
+    username: nconf.get('wp_user'),
+    password: nconf.get('wp_password'),
+    url: nconf.get('wp_url') + "/xmlrpc.php"
 });
 
 
-downloadImage = function(url, callback) {
+downloadImage = function(name, url, callback) {
   var requestSettings = {
     method: 'GET',
     url: url,
@@ -18,29 +21,28 @@ downloadImage = function(url, callback) {
 
   request(requestSettings, function(error, response, body) {
           // Use body as a binary Buffer
-    callback(body)
+    //callback(name, body)
+    client.uploadFile({
+        name: name || 'img_dl_navicatMySQL.png',
+        type: 'image/png',
+        bits: body
+    }, function(err, data) {
+      console.log(err, data);
+      callback(null, data);
+    });
   });
 }
 
-uploadToWP = function(data) {
-  client.uploadFile({
-      name: 'img_dl_navicatMySQL.png',
-      type: 'image/png',
-      bits: data
-  }, function(err, data) {
-    console.log(err, data);
-  });
 
-}
-
-postToWP = function() {
+postToWP = function(name, ids, cb) {
   client.newPost({
-      post_title: 'post from node.js',
-      post_content: '[gallery ids="40,41"]',
+      post_title: name || 'post from node.js',
+      post_content: ids && ids.length > 0 ? '[gallery ids="' + ids.join(',') + '"]' : '[gallery ids="40,41"]',
       post_status: 'publish',
       post_author: 'hadeser'
   }, function(err, data) {
     console.log(err, data);
+    cb(data);
   });
 }
 
@@ -59,10 +61,47 @@ exports.test = function() {
   //  console.log(err, data);
   //});
 
-  downloadImage('http://www.navicat.com.cn/images/stories/download/img_dl_navicatMySQL.png', uploadToWP)
+  //downloadImage('http://www.navicat.com.cn/images/stories/download/img_dl_navicatMySQL.png', uploadToWP)
 }
 
-exports.save = function(picArrays) {
+exports.save = function(picArrays, reply_callback) {
+
+  var i = 0;
+  var callbackFuncs = [];
+  var func;
+  //var picArrays = [
+  //  {'name': 'pic-btc-1.png', 'url': 'http://www.btcside.com/File/News/SmallSrc/2014032615/20140326150055_1004.jpg'},
+  //  {'name': 'pic-btc-2.jpg', 'url': 'http://www.btcside.com/File/News/SmallSrc/2014032615/20140326152132_5380.jpg'},
+  //  {'name': 'pic-btc-3.jpg', 'url': 'http://www.btcside.com/File/News/SmallSrc/2014032512/20140325125502_7900.jpg'}
+
+  //];
   console.log('picarrays: ', picArrays)
-  return 'http://nodejs.org'
+  for(; i < picArrays.length; i++) {
+    var name = picArrays[i].name;
+    var url = picArrays[i].url;
+    func =  makeCallbackFunc(name, url);
+    callbackFuncs.push(func);
+  }
+
+  async.parallel(callbackFuncs, function(err, result) {
+    console.log('downloadImage: ', err, result);
+    var ids = [];
+    var k = 0;
+    for(; k < result.length; k++) {
+      ids.push(result[k].id);
+    }
+    postToWP(new Date().toJSON(), ids, function(data) {
+      console.log('postToWP Success: ', data);
+      reply_callback(nconf.get('wp_url') + '/?p=' + data)
+    });
+  });
 }
+
+function makeCallbackFunc(name, url) {
+  return function(callback) {
+    downloadImage(name, url, callback)
+  }
+}
+
+
+
