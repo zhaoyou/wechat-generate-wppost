@@ -1,5 +1,6 @@
 {
-  "wp_url": "http://10.88.0.71",
+  "wp_url": "http://10.88.0.70",
   "wp_user": "hadeser",
-  "wp_password": "zy"
+  "wp_password": "zy",
+  "wechat_token": "mytoken"
 }

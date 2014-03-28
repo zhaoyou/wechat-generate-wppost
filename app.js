@@ -8,7 +8,7 @@ var wechat = require('wechat');
 var nconf = require('nconf');
 //nconf
 nconf.argv().env().file({file: process.cwd() + '/config.json'});
-console.log(nconf.get('wp_url'), nconf.get('wp_user'), nconf.get('wp_password'));
+console.log(nconf.get('wp_url'), nconf.get('wp_user'), nconf.get('wp_password'), nconf.get('wechat_token'));
 
 var routes = require('./routes');
 var user = require('./routes/user');
@@ -39,7 +39,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.cookieParser());
 app.use(express.session({secret: 'keyboard cat', cookie: {maxAge: 600000}}));
 
-app.use('/wechat', wechat('mytoken', wechat.text(function (info, req, res, next) {
+app.use('/wechat', wechat(nconf.get('wechat_token'), wechat.text(function (info, req, res, next) {
   if (info.Content === '=') {
     console.log('text', req.wxsession.text);
     var exp = req.wxsession.text.join('');
