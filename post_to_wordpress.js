@@ -37,7 +37,7 @@ downloadImage = function(name, url, callback) {
 postToWP = function(name, ids, cb) {
   client.newPost({
       post_title: name || 'post from node.js',
-      post_content: ids && ids.length > 0 ? '[gallery ids="' + ids.join(',') + '"]' : '[gallery ids="40,41"]',
+      post_content: ids && ids.length > 0 ? '[gallery link="file" ids="' + ids.join(',') + '"]' : '[gallery ids="40,41"]',
       post_status: 'publish',
       post_author: 'hadeser'
   }, function(err, data) {
