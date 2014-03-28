@@ -12,7 +12,8 @@ console.log(nconf.get('wp_url'), nconf.get('wp_user'), nconf.get('wp_password'))
 
 var routes = require('./routes');
 var user = require('./routes/user');
-var postToWordpress = require('./post_to_wordpress');
+var replyHandler = require('./reply_img_text');
+
 var http = require('http');
 var path = require('path');
 
@@ -60,14 +61,17 @@ app.use('/wechat', wechat('mytoken', wechat.text(function (info, req, res, next)
     res.reply('');
   } else {
     console.log(req.wxsession.pics);
-    postToWordpress.save(req.wxsession.pics, function(url) {
-      req.wxsession.pics = null;
-      res.reply(url);
+    replyHandler.postForReply(req.wxsession.pics, function(err, reply_result) {
+      if (err) {
+        res.reply('');
+      } else {
+        req.wxsession.pics = null;
+        res.reply(reply_result);
+      }
     });
   }
 })));
 
-//postToWordpress.save();
 
 // development only
 if ('development' == app.get('env')) {

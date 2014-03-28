@@ -90,9 +90,10 @@ exports.save = function(picArrays, reply_callback) {
     for(; k < result.length; k++) {
       ids.push(result[k].id);
     }
-    postToWP(new Date().toJSON(), ids, function(data) {
-      console.log('postToWP Success: ', data);
-      reply_callback(nconf.get('wp_url') + '/?p=' + data)
+    postToWP('Post from WeChat Robot ' + new Date().toTimeString() , ids, function(data) {
+      var url = nconf.get('wp_url') + '/?p=' + data
+      console.log('postToWP Success: ', url);
+      reply_callback(url)
     });
   });
 }
